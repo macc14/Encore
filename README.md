@@ -1,80 +1,47 @@
-# 🎵 Encore
+# encore 🎵
 
-A native iOS app for tracking your concert history, upcoming shows, and live music stats — built with SwiftUI and SwiftData.
+a native ios app for tracking concerts — past, present, and upcoming.
 
-![iOS 17+](https://img.shields.io/badge/iOS-17%2B-blue) ![Swift 5](https://img.shields.io/badge/Swift-5-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+built with swiftui + swiftdata.
 
-## Features
+## features
 
-- **Concert Tracking** — Log upcoming and past concerts with artist, venue, city, and date info
-- **Auto-Search** — Search for events via Bandsintown and Ticketmaster APIs to autofill concert details
-- **Setlist Lookup** — Automatically fetches potential setlists from Setlist.fm for each show
-- **Tour Poster Images** — Auto-fetches artist/tour images when adding a concert
-- **Festival Support** — Toggle festival mode for multi-day events with full lineup tracking
-- **Concert Stats** — View your top artists, total shows attended, and other listening stats
-- **Home Screen Widget** — Countdown widget showing days until your next concert
-- **Notifications** — Get reminded before upcoming shows
+- search upcoming & past events by artist via bandsintown
+- auto-fetches tour posters, venue, city, and date
+- setlist lookup powered by setlist.fm
+- festival mode with full lineup + multi-day support
+- concert stats — top artists, total shows, and more
+- home screen countdown widget
+- push notifications before upcoming shows
 
-## Screenshots
+## setup
 
-*Coming soon*
-
-## Setup
-
-### Prerequisites
-- Xcode 16+
-- iOS 17+ device or simulator
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (included in repo)
-
-### API Keys
-This app uses several music APIs. You'll need to create a `Secrets.plist` file with your own keys:
-
-1. Copy the template:
-   ```bash
-   cp Encore/Secrets.example.plist Encore/Secrets.plist
-   ```
-
-2. Fill in your API keys in `Encore/Secrets.plist`:
-   - **Bandsintown** — [Get an App ID](https://www.artists.bandsintown.com/bandsintown-api)
-   - **Setlist.fm** — [Get an API key](https://api.setlist.fm/docs/1.0/index.html)
-   - **Google Custom Search** — [Get an API key](https://developers.google.com/custom-search/v1/overview) *(optional)*
-   - **Ticketmaster** — [Get an API key](https://developer.ticketmaster.com/products-and-docs/apis/getting-started/) *(optional)*
-
-### Build
 ```bash
-# Generate Xcode project
+# 1. clone
+git clone https://github.com/macc14/Encore.git && cd Encore
+
+# 2. add your api keys
+cp Encore/Secrets.example.plist Encore/Secrets.plist
+# then fill in your keys
+
+# 3. generate xcode project & build
 ./xcodegen/bin/xcodegen
-
-# Open in Xcode
 open Encore.xcodeproj
-
-# Or build from command line
-xcodebuild -project Encore.xcodeproj -scheme Encore -sdk iphoneos build
 ```
 
-## Tech Stack
+### api keys
 
-- **SwiftUI** — Declarative UI framework
-- **SwiftData** — Persistent storage for concert data
-- **WidgetKit** — Home screen countdown widget
-- **UserNotifications** — Concert reminder notifications
+| service | required | get one |
+|---------|----------|---------|
+| bandsintown | yes | [bandsintown.com](https://www.artists.bandsintown.com/bandsintown-api) |
+| setlist.fm | yes | [api.setlist.fm](https://api.setlist.fm/docs/1.0/index.html) |
+| google custom search | no | [developers.google.com](https://developers.google.com/custom-search/v1/overview) |
+| ticketmaster | no | [developer.ticketmaster.com](https://developer.ticketmaster.com/products-and-docs/apis/getting-started/) |
 
-## Project Structure
+## stack
 
-```
-Encore/
-├── Models/          # SwiftData models (Concert)
-├── Services/        # API integrations (Bandsintown, Setlist.fm, etc.)
-├── Views/           # SwiftUI views
-└── Assets.xcassets/ # App icons and assets
+swiftui · swiftdata · widgetkit · usernotifications
 
-EncoreWidget/        # WidgetKit extension
-```
+## license
 
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
-## Author
-
-Built by [macky](https://github.com/macc14)
+mit — built by [macky](https://github.com/macc14)

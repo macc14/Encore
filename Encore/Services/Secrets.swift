@@ -15,5 +15,4 @@ enum Secrets {
     static var googleCx: String { secrets["GOOGLE_CX"] ?? "" }
     static var setlistFmApiKey: String { secrets["SETLISTFM_API_KEY"] ?? "" }
     static var bandsInTownAppId: String { secrets["BANDSINTOWN_APP_ID"] ?? "" }
-    static var ticketmasterApiKey: String { secrets["TICKETMASTER_API_KEY"] ?? "" }
 }

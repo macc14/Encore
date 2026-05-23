@@ -1,5 +1,20 @@
 import Foundation
 
+struct EventSearchResult: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let headliner: String
+    let artists: [String]
+    let venue: String
+    let city: String
+    let date: String
+    let endDate: String?
+    let genre: String?
+    let ticketPrice: Double?
+    let imageUrl: String?
+    let isFestival: Bool
+}
+
 class BandsInTownService {
     static let shared = BandsInTownService()
     
@@ -7,9 +22,19 @@ class BandsInTownService {
     private let appId = Secrets.bandsInTownAppId
     private let baseUrl = "https://rest.bandsintown.com"
     
-    func fetchEvents(for artist: String) async throws -> [TicketmasterSearchResult] {
+    func fetchEvents(for artist: String, includePast: Bool = false, fromDate: Date? = nil) async throws -> [EventSearchResult] {
         let encodedArtist = artist.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? artist
-        let urlString = "\(baseUrl)/artists/\(encodedArtist)/events?app_id=\(appId)"
+        
+        var dateParam = includePast ? "past" : "upcoming"
+        if includePast, let fromDate = fromDate {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let startStr = formatter.string(from: fromDate)
+            let endStr = formatter.string(from: Date())
+            dateParam = "\(startStr),\(endStr)"
+        }
+        
+        let urlString = "\(baseUrl)/artists/\(encodedArtist)/events?app_id=\(appId)&date=\(dateParam)"
         
         guard let url = URL(string: urlString) else { throw URLError(.badURL) }
         
@@ -32,14 +57,16 @@ class BandsInTownService {
         
         do {
             let events = try decoder.decode([BITEvent].self, from: data)
-            return events.map { transformEvent($0, artistName: artist) }
+            let results = events.map { transformEvent($0, artistName: artist) }
+            // For past events, return most recent first
+            return includePast ? results.reversed() : results
         } catch {
             print("Bandsintown Decode Error: \(error)")
             return []
         }
     }
     
-    private func transformEvent(_ event: BITEvent, artistName: String) -> TicketmasterSearchResult {
+    private func transformEvent(_ event: BITEvent, artistName: String) -> EventSearchResult {
         let title = event.title ?? artistName
         let lineup = event.lineup ?? [artistName]
         let venueName = event.venue?.name ?? ""
@@ -55,7 +82,7 @@ class BandsInTownService {
         // Get ticket price if offers exist
         let ticketPrice: Double? = nil // BIT usually just has URLs, not direct price floats
         
-        return TicketmasterSearchResult(
+        return EventSearchResult(
             id: event.id,
             name: title,
             headliner: lineup.first ?? artistName,

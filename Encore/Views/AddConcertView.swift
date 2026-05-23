@@ -7,8 +7,10 @@ struct AddConcertView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var searchQuery = ""
-    @State private var searchResults: [TicketmasterSearchResult] = []
+    @State private var searchResults: [EventSearchResult] = []
     @State private var isSearching = false
+    @State private var searchMode = 0 // 0 = upcoming, 1 = past
+    @State private var searchDate = Calendar.current.date(byAdding: .year, value: -1, to: Date())!
     
     // Form fields
     @State private var title = ""
@@ -26,16 +28,28 @@ struct AddConcertView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Search Concerts")) {
+                Section(header: Text("search concerts")) {
+                    Picker("", selection: $searchMode) {
+                        Text("upcoming").tag(0)
+                        Text("past").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 0))
+                    
+                    if searchMode == 1 {
+                        DatePicker("search from", selection: $searchDate, in: ...Date(), displayedComponents: .date)
+                    }
+                    
                     HStack {
-                        TextField("Search artist name...", text: $searchQuery)
+                        TextField("search artist name...", text: $searchQuery)
                             .onSubmit {
                                 performSearch()
                             }
                         if isSearching {
                             ProgressView()
                         } else {
-                            Button("Search") {
+                            Button("search") {
                                 performSearch()
                             }
                         }
@@ -48,7 +62,7 @@ struct AddConcertView: View {
                             }) {
                                 VStack(alignment: .leading) {
                                     Text(result.name.isEmpty ? result.headliner : result.name).font(.headline)
-                                    Text("\(result.venue), \(result.city) - \(formatDisplayDate(result.date))").font(.caption)
+                                    Text("\(result.venue), \(result.city) — \(formatDisplayDate(result.date))").font(.caption)
                                 }
                             }
                             .foregroundColor(.primary)
@@ -57,24 +71,41 @@ struct AddConcertView: View {
                     }
                 }
                 
-                Section(header: Text("Concert Details")) {
-                    TextField("Tour/Event Name", text: $title)
-                    TextField("Headliner", text: $headliner)
-                    TextField(isFestival ? "Lineup (comma-separated)" : "Openers (comma-separated)", text: $openers)
-                    TextField("Venue", text: $venue)
-                    TextField("City", text: $city)
-                    DatePicker(isFestival ? "Start Date & Time" : "Date & Time", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                    Toggle("Is Festival", isOn: $isFestival)
+                Section(header: Text("concert details")) {
+                    TextField("tour/event name", text: $title)
+                    TextField("headliner", text: $headliner)
+                    TextField(isFestival ? "lineup (comma-separated)" : "openers (comma-separated)", text: $openers)
+                    TextField("venue", text: $venue)
+                    TextField("city", text: $city)
+                    DatePicker(isFestival ? "start date & time" : "date & time", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                    Toggle("is festival", isOn: $isFestival)
                     if isFestival {
-                        DatePicker("End Date", selection: $endDate, displayedComponents: [.date])
+                        DatePicker("end date", selection: $endDate, displayedComponents: [.date])
                     }
                 }
                 
                 Section(header: Text("tour poster")) {
+                    if isFetchingImage {
+                        HStack {
+                            ProgressView()
+                            Text("fetching image...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if let flyerImageData, let uiImage = UIImage(data: flyerImageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                         HStack {
                             Image(systemName: "photo")
-                            Text("Select Photo")
+                            Text(flyerImageData != nil ? "replace photo" : "select photo")
                         }
                     }
                     .onChange(of: selectedPhotoItem) { _, newItem in
@@ -84,28 +115,22 @@ struct AddConcertView: View {
                             }
                         }
                     }
-                    
-                    if let flyerImageData, let uiImage = UIImage(data: flyerImageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 200)
-                    }
                 }
             }
-            .navigationTitle("Add Concert")
+            .navigationTitle("add concert")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { saveConcert() }
+                    Button("save") { saveConcert() }
                         .disabled(title.isEmpty || venue.isEmpty || isFetchingImage)
                 }
             }
         }
     }
+    
     private func formatDisplayDate(_ dateString: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
@@ -128,7 +153,11 @@ struct AddConcertView: View {
         isSearching = true
         Task {
             do {
-                searchResults = try await BandsInTownService.shared.fetchEvents(for: searchQuery)
+                searchResults = try await BandsInTownService.shared.fetchEvents(
+                    for: searchQuery,
+                    includePast: searchMode == 1,
+                    fromDate: searchMode == 1 ? searchDate : nil
+                )
             } catch {
                 print("Search failed: \(error)")
             }
@@ -136,31 +165,46 @@ struct AddConcertView: View {
         }
     }
     
-    private func autofill(with result: TicketmasterSearchResult) {
-        title = result.name
+    private func autofill(with result: EventSearchResult) {
+        title = result.name.isEmpty ? result.headliner : result.name
         headliner = result.headliner
-        openers = result.artists.filter { $0 != result.headliner }.joined(separator: ", ")
+        isFestival = result.isFestival
+        
+        // For festivals, put the full lineup; for regular shows, exclude the headliner
+        if isFestival {
+            openers = result.artists.joined(separator: ", ")
+        } else {
+            openers = result.artists.filter { $0 != result.headliner }.joined(separator: ", ")
+        }
+        
         venue = result.venue
         city = result.city
-        isFestival = result.isFestival
         
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         if let d = formatter.date(from: result.date) {
             date = d
         } else {
-            // Fallback for simple date strings if any
             formatter.dateFormat = "yyyy-MM-dd"
             if let d = formatter.date(from: result.date) {
                 date = d
             }
         }
         
-        let query = "\(result.headliner) \(result.city) tour poster"
+        if let endDateStr = result.endDate {
+            formatter.dateFormat = "yyyy-MM-dd"
+            if let d = formatter.date(from: endDateStr) {
+                endDate = d
+            }
+        }
+        
+        // Auto-fetch tour poster image
         isFetchingImage = true
         Task {
             defer { isFetchingImage = false }
             
+            // Try Google Image Search first
+            let query = "\(result.headliner) \(result.city) tour poster"
             if let url = try? await GoogleImageSearchService.shared.searchImage(query: query) {
                 if let (data, _) = try? await URLSession.shared.data(from: url) {
                     flyerImageData = data
@@ -168,7 +212,7 @@ struct AddConcertView: View {
                 }
             }
             
-            // Fallback to Ticketmaster/Bandsintown image if Google fails
+            // Fallback to Bandsintown/Ticketmaster artist image
             if let imageUrlString = result.imageUrl, let url = URL(string: imageUrlString) {
                 if let (data, _) = try? await URLSession.shared.data(from: url) {
                     flyerImageData = data

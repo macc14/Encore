@@ -1,6 +1,6 @@
 # encore 🎵
 
-a native ios app for tracking concerts — past, present, and upcoming.
+an ios app where you can track and log past or upcoming concerts! for the concertgoers, by a concertgoer.
 
 built with swiftui + swiftdata.
 
@@ -36,7 +36,6 @@ open Encore.xcodeproj
 | bandsintown | yes | [bandsintown.com](https://www.artists.bandsintown.com/bandsintown-api) |
 | setlist.fm | yes | [api.setlist.fm](https://api.setlist.fm/docs/1.0/index.html) |
 | google custom search | no | [developers.google.com](https://developers.google.com/custom-search/v1/overview) |
-| ticketmaster | no | [developer.ticketmaster.com](https://developer.ticketmaster.com/products-and-docs/apis/getting-started/) |
 
 ## stack
 
@@ -44,4 +43,4 @@ swiftui · swiftdata · widgetkit · usernotifications
 
 ## license
 
-mit — built by [macky](https://github.com/macc14)
+mit — made with love by [mack wozniak](https://github.com/macc14)

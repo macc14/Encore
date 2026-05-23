@@ -1,0 +1,36 @@
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/
+Encore.xcodeproj/
+Encore 2.xcodeproj/
+SetlistNative.xcodeproj/
+DerivedData/
+build/
+build_log.txt
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Secrets - NEVER commit this file
+Encore/Secrets.plist
+
+# XcodeGen binary (large)
+xcodegen/
+xcodegen.zip
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Misc
+*.ipa
+*.dSYM.zip
+*.dSYM
